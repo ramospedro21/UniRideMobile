@@ -51,9 +51,13 @@ export default function LoginScreen() {
     }
   };
 
+  const handlePasswordReset = async () => {
+
+  }
+
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Nova Conta</Text>
+      <Text style={styles.header}>Esqueci a senha</Text>
 
       {/* Logo */}
       <Image
@@ -72,34 +76,10 @@ export default function LoginScreen() {
         value={email}
         onChangeText={setEmail}
       />
-      <TextInput
-        style={styles.input}
-        placeholder="Senha"
-        placeholderTextColor="#999"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
 
       {/* Botão Entrar */}
-      <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-        <Text style={styles.loginButtonText}>Entrar</Text>
-      </TouchableOpacity>
-
-      {/* Esqueceu a senha */}
-      <TouchableOpacity 
-        style={styles.forgotButton}
-        onPress={() => router.push("/login/resetPassword")} 
-      >
-        <Text style={styles.forgotButtonText}>Esqueceu a senha?</Text>
-      </TouchableOpacity>
-
-      {/* Criar nova conta */}
-      <TouchableOpacity 
-        style={styles.createAccountButton}
-        onPress={() => router.push("/login/register")}   
-      >
-        <Text style={styles.createAccountText}>Criar nova conta</Text>
+      <TouchableOpacity style={styles.loginButton} onPress={handlePasswordReset}>
+        <Text style={styles.loginButtonText}>Continuar</Text>
       </TouchableOpacity>
     </View>
   );
