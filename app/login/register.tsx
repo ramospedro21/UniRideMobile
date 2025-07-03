@@ -41,10 +41,10 @@ export default function RegisterScreen() {
   };
 
   const handleRegister = async () => {
-    if (!form.name || !form.surname || !form.email || !form.password || !form.cellphone || !form.document || !form.photo) {
-      Alert.alert("Erro", "Preencha todos os campos obrigatórios.");
-      return;
-    }
+    // if (!form.name || !form.surname || !form.email || !form.password || !form.cellphone || !form.document) {
+    //   Alert.alert("Erro", "Preencha todos os campos obrigatórios.");
+    //   return;
+    // }
 
     try {
       setLoading(true);
@@ -53,32 +53,36 @@ export default function RegisterScreen() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ form }),
+        body: JSON.stringify(form),
       });
 
       const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data?.message || "Erro ao fazer login.");
+      if (data.errors) {
+        throw new Error(data?.errors || "Erro ao criar o usuário.");
       }
 
-      if (!data.access_token) {
-        throw new Error("Token não encontrado na resposta.");
-      }
+      Alert.alert("Sucesso", "Cadastro enviado com sucesso!");
 
-      await router.push("/login/register")
+      await router.push("/login")
 
     } catch (error: any) {
       Alert.alert("Erro", error.message);
-      console.log(error);
     } finally {
       setLoading(false);
     }
-    Alert.alert("Sucesso", "Cadastro enviado com sucesso!");
   };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      {/* Botão voltar */}
+      <TouchableOpacity
+        onPress={() => router.push("/login")}
+        style={styles.backButton}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.backButtonText}>← Voltar</Text>
+      </TouchableOpacity>
       <Text style={styles.title}>Nova conta</Text>
       <Text style={styles.subtitle}>Informe seus dados:</Text>
 
@@ -220,5 +224,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 12,
     color: "#444",
+  },
+  backButton: {
+    marginBottom: 12,
+    alignSelf: "flex-start",
+    marginTop: 50
+  },
+  backButtonText: {
+    fontSize: 18,
+    color: "#007AFF", // azul padrão de link
   },
 });
