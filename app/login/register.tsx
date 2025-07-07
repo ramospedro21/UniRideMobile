@@ -41,14 +41,9 @@ export default function RegisterScreen() {
   };
 
   const handleRegister = async () => {
-    // if (!form.name || !form.surname || !form.email || !form.password || !form.cellphone || !form.document) {
-    //   Alert.alert("Erro", "Preencha todos os campos obrigatórios.");
-    //   return;
-    // }
-
     try {
       setLoading(true);
-      const response = await fetch("http://192.168.15.12:8000/api/register", {
+      const response = await fetch("http://192.168.15.89:8000/api/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
