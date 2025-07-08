@@ -23,7 +23,7 @@ export default function LoginScreen() {
 
     try {
       setLoading(true);
-      const response = await fetch("http://192.168.15.89:8000/api/login", {
+      const response = await fetch("http://192.168.15.12:8000/api/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -45,7 +45,6 @@ export default function LoginScreen() {
 
     } catch (error: any) {
       Alert.alert("Erro", error.message);
-      console.log(error);
     } finally {
       setLoading(false);
     }
@@ -89,7 +88,7 @@ export default function LoginScreen() {
       {/* Esqueceu a senha */}
       <TouchableOpacity 
         style={styles.forgotButton}
-        onPress={() => router.push("/login/resetPassword")} 
+        onPress={() => router.push("/(public)/auth/resetPassword")} 
       >
         <Text style={styles.forgotButtonText}>Esqueceu a senha?</Text>
       </TouchableOpacity>
@@ -97,7 +96,7 @@ export default function LoginScreen() {
       {/* Criar nova conta */}
       <TouchableOpacity 
         style={styles.createAccountButton}
-        onPress={() => router.push("/login/register")}   
+        onPress={() => router.push("/(public)/auth/register")}   
       >
         <Text style={styles.createAccountText}>Criar nova conta</Text>
       </TouchableOpacity>

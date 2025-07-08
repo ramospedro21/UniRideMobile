@@ -1,9 +1,11 @@
-import { FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { useAuthSession } from "@/providers/AuthProvider";
+import { FontAwesome5, MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { signOut } = useAuthSession();
 
   return (
     <View style={styles.container}>
@@ -12,6 +14,11 @@ export default function HomeScreen() {
       <View style={styles.logoContainer}>
         <Image source={require("@/assets/images/uniride_logo.png")} style={styles.logo} />
       </View>
+
+      
+      <TouchableOpacity onPress={signOut}>
+        <Text>Sair</Text>
+      </TouchableOpacity>
       
       {/* localização */}
       <View style={{ alignItems: "center", marginTop: 20 }}>
@@ -56,22 +63,6 @@ export default function HomeScreen() {
       <TouchableOpacity style={styles.tripsButton}>
         <Text style={styles.tripsText}>Suas viagens</Text>
       </TouchableOpacity>
-
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <View style={styles.navItemActive}>
-          <FontAwesome5 name="car" size={18} color="#fff" />
-          <Text style={styles.navTextActive}>Corridas</Text>
-        </View>
-        <View style={styles.navItem}>
-          <MaterialIcons name="chat-bubble-outline" size={20} color="yellow" />
-          <Text style={styles.navText}>Mensagens</Text>
-        </View>
-        <View style={styles.navItem}>
-          <Ionicons name="person-circle-outline" size={22} color="yellow" />
-          <Text style={styles.navText}>Perfil</Text>
-        </View>
-      </View>
     </View>
   );
 }
@@ -169,34 +160,5 @@ const styles = StyleSheet.create({
   tripsText: {
     fontSize: 16,
     fontWeight: "500",
-  },
-  bottomNav: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    backgroundColor: "#141e61",
-    height: 70,
-    paddingBottom: 10,
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
-  navItem: {
-    alignItems: "center",
-  },
-  navItemActive: {
-    alignItems: "center",
-    borderTopColor: "white",
-    borderTopWidth: 5,
-    paddingTop: 4,
-  },
-  navText: {
-    color: "yellow",
-    fontSize: 12,
-  },
-  navTextActive: {
-    color: "white",
-    fontSize: 12,
   },
 });

@@ -43,7 +43,7 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://192.168.15.89:8000/api/register", {
+      const response = await fetch("http://192.168.15.12:8000/api/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -72,7 +72,7 @@ export default function RegisterScreen() {
     <ScrollView contentContainerStyle={styles.container}>
       {/* Botão voltar */}
       <TouchableOpacity
-        onPress={() => router.push("/login")}
+        onPress={() => router.push("/(public)/auth/login")}
         style={styles.backButton}
         activeOpacity={0.7}
       >
