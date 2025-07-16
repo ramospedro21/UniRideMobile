@@ -59,7 +59,7 @@ export default function RegisterScreen() {
 
       Alert.alert("Sucesso", "Cadastro enviado com sucesso!");
 
-      await router.push("/login")
+      await router.push("/(public)/auth/login")
 
     } catch (error: any) {
       Alert.alert("Erro", error.message);

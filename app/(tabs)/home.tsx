@@ -1,4 +1,5 @@
 import { useAuthSession } from "@/providers/AuthProvider";
+import { hasRegisteredCar } from "@/services/carService";
 import { FontAwesome5, MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -6,6 +7,24 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 export default function HomeScreen() {
   const router = useRouter();
   const { signOut } = useAuthSession();
+
+  const handleOfferRide = async () => {
+    const hasCar = await hasRegisteredCar();
+
+    if (hasCar) {
+      router.push("/(authorized)/ride/offerStepOne");
+    } else {
+      router.push("/(authorized)/vehicle/requireCar");
+    }
+  };
+
+  const handleSearchRide = () => {
+    router.push("/(authorized)/ride/search");
+  };
+
+  const handleTrips = () => {
+    console.log("Ver viagens futuras ou passadas");
+  };
 
   return (
     <View style={styles.container}>
@@ -40,7 +59,7 @@ export default function HomeScreen() {
         <Text style={styles.cardText}>
           Compartilhe uma vaga no seu carro com outros usuários indo para o mesmo destino.
         </Text>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={handleOfferRide}>
           <Text style={styles.continue}>Continuar</Text>
         </TouchableOpacity>
       </View>

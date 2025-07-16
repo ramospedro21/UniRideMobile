@@ -1,0 +1,174 @@
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+	Alert,
+	Button,
+	FlatList,
+	StyleSheet,
+	Text,
+	TextInput,
+	TouchableOpacity,
+	View,
+} from "react-native";
+
+// Mock: substitua pela sua API
+const fetchUserCars = async () => [
+  { id: "1", name: "Fiat Uno - ABC-1234" },
+  { id: "2", name: "VW Gol - XYZ-9876" },
+];
+
+export default function OfferStepThree() {
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const [ride, setRide] = useState<any>(null);
+
+  const [step, setStep] = useState(1);
+  const [date, setDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [time, setTime] = useState("12:00");
+  const [passengers, setPassengers] = useState(1);
+  const [price, setPrice] = useState("");
+  const [cars, setCars] = useState<any[]>([]);
+  const [selectedCarId, setSelectedCarId] = useState<string | null>(null);
+
+
+  useEffect(() => {
+	if (params.ride) {
+		try {
+		const parsed = JSON.parse(params.ride as string);
+		setRide(parsed);
+		fetchUserCars().then(setCars);
+		} catch (e) {
+		console.error("Erro ao recuperar o ride:", e);
+		}
+	}
+  }, [params.ride]);
+ 
+  const next = () => setStep((s) => Math.min(5, s + 1));
+  const back = () => (step > 1 ? setStep((s) => s - 1) : router.back());
+
+  const finish = () => {
+    if (!selectedCarId || !price) {
+      return Alert.alert("Preencha todos os campos antes de continuar");
+    }
+    const finalRide = {
+      ...ride,
+      departure_time: date.toISOString(),
+      passengers,
+      price: Number(price),
+      driver_id: "4",
+      car_id: selectedCarId,
+    };
+
+    console.log("⚡ Final ride obj:", finalRide);
+
+    Alert.alert("Pronto!", "DADOS PRONTOS PARA ENVIAR", [
+        {
+            text: "OK",
+            onPress: () => router.replace("/(tabs)/home"),
+        },
+    ]);
+  };
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.header}>Step {step} de 5</Text>
+
+      {step === 1 && (
+        <>
+          <Button title="Selecionar Data" onPress={() => setShowDatePicker(true)} />
+          <Text>Selecionado: {date.toLocaleDateString()}</Text>
+          {showDatePicker && (
+            <DateTimePicker
+              value={date}
+              mode="date"
+              display="spinner"
+              onChange={(_, d) => {
+                setShowDatePicker(false);
+                if (d) setDate(d);
+              }}
+            />
+          )}
+        </>
+      )}
+
+      {step === 2 && (
+        <TextInput
+          style={styles.input}
+          placeholder="Hora de saída (HH:mm)"
+          value={time}
+          onChangeText={setTime}
+        />
+      )}
+
+      {step === 3 && (
+        <View style={styles.counterContainer}>
+          <Button title="-" onPress={() => passengers > 1 && setPassengers(passengers - 1)} />
+          <Text style={styles.counterText}>{passengers}</Text>
+          <Button title="+" onPress={() => passengers < 4 && setPassengers(passengers + 1)} />
+        </View>
+      )}
+
+      {step === 4 && (
+        <TextInput
+          style={styles.input}
+          placeholder="Preço da carona (ex: 20.50)"
+          value={price}
+          onChangeText={setPrice}
+          keyboardType="numeric"
+        />
+      )}
+
+      {step === 5 && (
+        <>
+          <Text>Selecione o veículo:</Text>
+          <FlatList
+            data={cars}
+            keyExtractor={(c) => c.id}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.radioRow}
+                onPress={() => setSelectedCarId(item.id)}
+              >
+                <View style={styles.radio}>
+                  {selectedCarId === item.id && <View style={styles.radioSelected} />}
+                </View>
+                <Text>{item.name}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        </>
+      )}
+
+      <View style={styles.navRow}>
+        <Button title="Voltar" onPress={back} />
+        {step < 5 ? (
+          <Button title="Próximo" onPress={next} />
+        ) : (
+          <Button title="Finalizar" onPress={finish} />
+        )}
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20 },
+  header: { fontSize: 18, fontWeight: "bold", marginBottom: 20 },
+  input: {
+    borderWidth: 1,
+    borderColor: "#888",
+    borderRadius: 8,
+    padding: 14,
+    marginVertical: 20,
+  },
+  counterContainer: { flexDirection: "row", alignItems: "center", justifyContent: "center", marginVertical: 20 },
+  counterText: { fontSize: 24, marginHorizontal: 20 },
+  navRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 30 },
+  radioRow: { flexDirection: "row", alignItems: "center", marginVertical: 10 },
+  radio: {
+    width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: "#888", justifyContent: "center", alignItems: "center", marginRight: 10,
+  },
+  radioSelected: { width: 10, height: 10, borderRadius: 5, backgroundColor: "#141e61" },
+});
