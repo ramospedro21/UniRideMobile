@@ -1,5 +1,6 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 import { useEffect, useState } from "react";
 import {
 	Alert,
@@ -19,138 +20,157 @@ const fetchUserCars = async () => [
 ];
 
 export default function OfferStepThree() {
-  const router = useRouter();
-  const params = useLocalSearchParams();
-  const [ride, setRide] = useState<any>(null);
+	const router = useRouter();
+	const params = useLocalSearchParams();
+	const [ride, setRide] = useState<any>(null);
 
-  const [step, setStep] = useState(1);
-  const [date, setDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [time, setTime] = useState("12:00");
-  const [passengers, setPassengers] = useState(1);
-  const [price, setPrice] = useState("");
-  const [cars, setCars] = useState<any[]>([]);
-  const [selectedCarId, setSelectedCarId] = useState<string | null>(null);
+	const [step, setStep] = useState(1);
+	const [date, setDate] = useState(new Date());
+	const [showDatePicker, setShowDatePicker] = useState(false);
+	const [time, setTime] = useState("12:00");
+	const [passengers, setPassengers] = useState(1);
+	const [price, setPrice] = useState("");
+	const [cars, setCars] = useState<any[]>([]);
+	const [selectedCarId, setSelectedCarId] = useState<string | null>(null);
 
 
-  useEffect(() => {
-	if (params.ride) {
-		try {
-		const parsed = JSON.parse(params.ride as string);
-		setRide(parsed);
-		fetchUserCars().then(setCars);
-		} catch (e) {
-		console.error("Erro ao recuperar o ride:", e);
+	useEffect(() => {
+		if (params.ride) {
+			try {
+			const parsed = JSON.parse(params.ride as string);
+			setRide(parsed);
+			fetchUserCars().then(setCars);
+			} catch (e) {
+			console.error("Erro ao recuperar o ride:", e);
+			}
 		}
-	}
-  }, [params.ride]);
- 
-  const next = () => setStep((s) => Math.min(5, s + 1));
-  const back = () => (step > 1 ? setStep((s) => s - 1) : router.back());
+	}, [params.ride]);
+	
+	const next = () => setStep((s) => Math.min(5, s + 1));
+	const back = () => (step > 1 ? setStep((s) => s - 1) : router.back());
 
-  const finish = () => {
-    if (!selectedCarId || !price) {
-      return Alert.alert("Preencha todos os campos antes de continuar");
-    }
-    const finalRide = {
-      ...ride,
-      departure_time: date.toISOString(),
-      passengers,
-      price: Number(price),
-      driver_id: "4",
-      car_id: selectedCarId,
-    };
+  	const finish = async () => {
+		if (!selectedCarId || !price || !ride?.origin || !ride?.destination) {
+			return Alert.alert("Preencha todos os campos antes de continuar");
+		}
 
-    console.log("⚡ Final ride obj:", finalRide);
+		const formattedRide = {
+			driver_id: "4",
+			car_id: selectedCarId,
+			departure_location_lat: String(ride.origin.latitude),
+			departure_location_long: String(ride.origin.longitude),
+			arrive_location_lat: String(ride.destination.latitude),
+			arrive_location_long: String(ride.destination.longitude),
+			departure_time: date.toISOString(),
+			capacity: passengers,
+			ride_fare: Number(price),
+		};
 
-    Alert.alert("Pronto!", "DADOS PRONTOS PARA ENVIAR", [
-        {
-            text: "OK",
-            onPress: () => router.replace("/(tabs)/home"),
-        },
-    ]);
-  };
+		console.log("🚀 Enviando ride formatado:", formattedRide);
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Step {step} de 5</Text>
+		const token = await SecureStore.getItemAsync("access_token");
 
-      {step === 1 && (
-        <>
-          <Button title="Selecionar Data" onPress={() => setShowDatePicker(true)} />
-          <Text>Selecionado: {date.toLocaleDateString()}</Text>
-          {showDatePicker && (
-            <DateTimePicker
-              value={date}
-              mode="date"
-              display="spinner"
-              onChange={(_, d) => {
-                setShowDatePicker(false);
-                if (d) setDate(d);
-              }}
-            />
-          )}
-        </>
-      )}
+		const response = await fetch("http://192.168.15.12:8000/api/cars", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer ${token}`,
+			},
+			body: JSON.stringify(formattedRide),
+		});
 
-      {step === 2 && (
-        <TextInput
-          style={styles.input}
-          placeholder="Hora de saída (HH:mm)"
-          value={time}
-          onChangeText={setTime}
-        />
-      )}
+		const data = await response.json();
 
-      {step === 3 && (
-        <View style={styles.counterContainer}>
-          <Button title="-" onPress={() => passengers > 1 && setPassengers(passengers - 1)} />
-          <Text style={styles.counterText}>{passengers}</Text>
-          <Button title="+" onPress={() => passengers < 4 && setPassengers(passengers + 1)} />
-        </View>
-      )}
+		if (!response.ok) {
+			const message = data?.errors || "Erro ao registrar a carona.";
+			throw new Error(message);
+		}
 
-      {step === 4 && (
-        <TextInput
-          style={styles.input}
-          placeholder="Preço da carona (ex: 20.50)"
-          value={price}
-          onChangeText={setPrice}
-          keyboardType="numeric"
-        />
-      )}
+	  	Alert.alert("Sucesso", "Carona registrada com sucesso!");
 
-      {step === 5 && (
-        <>
-          <Text>Selecione o veículo:</Text>
-          <FlatList
-            data={cars}
-            keyExtractor={(c) => c.id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.radioRow}
-                onPress={() => setSelectedCarId(item.id)}
-              >
-                <View style={styles.radio}>
-                  {selectedCarId === item.id && <View style={styles.radioSelected} />}
-                </View>
-                <Text>{item.name}</Text>
-              </TouchableOpacity>
-            )}
-          />
-        </>
-      )}
+	  	router.push("/(tabs)/home");
+	};
 
-      <View style={styles.navRow}>
-        <Button title="Voltar" onPress={back} />
-        {step < 5 ? (
-          <Button title="Próximo" onPress={next} />
-        ) : (
-          <Button title="Finalizar" onPress={finish} />
-        )}
-      </View>
-    </View>
-  );
+	return (
+		<View style={styles.container}>
+		<Text style={styles.header}>Step {step} de 5</Text>
+
+		{step === 1 && (
+			<>
+			<Button title="Selecionar Data" onPress={() => setShowDatePicker(true)} />
+			<Text>Selecionado: {date.toLocaleDateString()}</Text>
+			{showDatePicker && (
+				<DateTimePicker
+				value={date}
+				mode="date"
+				display="spinner"
+				onChange={(_, d) => {
+					setShowDatePicker(false);
+					if (d) setDate(d);
+				}}
+				/>
+			)}
+			</>
+		)}
+
+		{step === 2 && (
+			<TextInput
+			style={styles.input}
+			placeholder="Hora de saída (HH:mm)"
+			value={time}
+			onChangeText={setTime}
+			/>
+		)}
+
+		{step === 3 && (
+			<View style={styles.counterContainer}>
+			<Button title="-" onPress={() => passengers > 1 && setPassengers(passengers - 1)} />
+			<Text style={styles.counterText}>{passengers}</Text>
+			<Button title="+" onPress={() => passengers < 4 && setPassengers(passengers + 1)} />
+			</View>
+		)}
+
+		{step === 4 && (
+			<TextInput
+			style={styles.input}
+			placeholder="Preço da carona (ex: 20.50)"
+			value={price}
+			onChangeText={setPrice}
+			keyboardType="numeric"
+			/>
+		)}
+
+		{step === 5 && (
+			<>
+			<Text>Selecione o veículo:</Text>
+			<FlatList
+				data={cars}
+				keyExtractor={(c) => c.id}
+				renderItem={({ item }) => (
+				<TouchableOpacity
+					style={styles.radioRow}
+					onPress={() => setSelectedCarId(item.id)}
+				>
+					<View style={styles.radio}>
+					{selectedCarId === item.id && <View style={styles.radioSelected} />}
+					</View>
+					<Text>{item.name}</Text>
+				</TouchableOpacity>
+				)}
+			/>
+			</>
+		)}
+
+		<View style={styles.navRow}>
+			<Button title="Voltar" onPress={back} />
+				{step < 5 ? (
+			<Button title="Próximo" onPress={next} />
+				) : (
+			<Button title="Finalizar" onPress={finish} />
+			)}
+		</View>
+		</View>
+	);
 }
 
 const styles = StyleSheet.create({
