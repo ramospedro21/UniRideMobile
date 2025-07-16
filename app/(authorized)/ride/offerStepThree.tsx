@@ -55,7 +55,7 @@ export default function OfferStepThree() {
 		}
 
 		const formattedRide = {
-			driver_id: "4",
+			driver_id: "4", //TODO: TRAZER ID DO USUÁRIO DINAMICAMENTE
 			car_id: selectedCarId,
 			departure_location_lat: String(ride.origin.latitude),
 			departure_location_long: String(ride.origin.longitude),
