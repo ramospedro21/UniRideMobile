@@ -6,7 +6,7 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { signOut } = useAuthSession();
+  const { signOut, user } = useAuthSession();
 
   const handleOfferRide = async () => {
     const hasCar = await hasRegisteredCar();
@@ -42,7 +42,7 @@ export default function HomeScreen() {
       {/* localização */}
       <View style={{ alignItems: "center", marginTop: 20 }}>
         <TouchableOpacity style={styles.locationButton}>
-          <Text style={styles.locationText}>Qual sua localização?</Text>
+          <Text style={styles.locationText}>Olá {user?.name}, Qual sua localização?</Text>
         </TouchableOpacity>
       </View>
 

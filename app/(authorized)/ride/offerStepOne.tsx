@@ -158,7 +158,7 @@ export default function OfferStepOne() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
+  container: { flex: 1, padding: 20, marginTop: 50 },
   back: { fontSize: 16, marginBottom: 10 },
   title: { fontSize: 18, fontWeight: "bold", marginBottom: 12 },
   input: {

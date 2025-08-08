@@ -34,7 +34,7 @@ export default function VehicleRegisterScreen() {
 
       const token = await SecureStore.getItemAsync("access_token");
 
-      const response = await fetch("http://192.168.15.12:8000/api/cars", {
+      const response = await fetch("http://192.168.15.27:8000/api/cars", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

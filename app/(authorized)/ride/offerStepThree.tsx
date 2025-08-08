@@ -1,3 +1,4 @@
+import { useAuthSession } from "@/providers/AuthProvider";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
@@ -13,17 +14,11 @@ import {
 	View,
 } from "react-native";
 
-// Mock: substitua pela sua API
-const fetchUserCars = async () => [
-  { id: "1", name: "Fiat Uno - ABC-1234" },
-  { id: "2", name: "VW Gol - XYZ-9876" },
-];
-
 export default function OfferStepThree() {
 	const router = useRouter();
 	const params = useLocalSearchParams();
 	const [ride, setRide] = useState<any>(null);
-
+	const { user } = useAuthSession();
 	const [step, setStep] = useState(1);
 	const [date, setDate] = useState(new Date());
 	const [showDatePicker, setShowDatePicker] = useState(false);
@@ -34,22 +29,74 @@ export default function OfferStepThree() {
 	const [cars, setCars] = useState<any[]>([]);
 	const [selectedCarId, setSelectedCarId] = useState<string | null>(null);
 
-
-
 	useEffect(() => {
-		if (params.ride) {
+		const loadData = async () => {
 			try {
-			const parsed = JSON.parse(params.ride as string);
-			setRide(parsed);
-			fetchUserCars().then(setCars);
-			} catch (e) {
-			console.error("Erro ao recuperar o ride:", e);
+				if (params.ride) {
+					const parsed = JSON.parse(params.ride as string);
+					setRide(parsed);
+				}
+
+				const userCars = await fetchUserCars();
+				setCars(userCars);
+				console.log(cars);
+			} catch (error) {
+				console.error("Erro ao carregar dados da tela:", error);
+				Alert.alert("Erro", "Não foi possível carregar os veículos.");
 			}
-		}
-	}, [params.ride]);
+		};
+
+		loadData();
+	}, []);
 	
 	const next = () => setStep((s) => Math.min(5, s + 1));
 	const back = () => (step > 1 ? setStep((s) => s - 1) : router.back());
+
+	const fetchUserCars = async () => {
+
+		const token = await SecureStore.getItemAsync("access_token");
+		const response = await fetch(`http://192.168.15.27:8001/api/getCarsByUser/${user?.id}`, {
+			headers: {
+				Authorization: `Bearer ${token}`,
+			},
+		});
+
+		if (!response.ok) {
+			throw new Error("Erro ao buscar veículos");
+		}
+
+		const data = await response.json();
+
+		return data.data;
+	};
+
+	const formatBRL = (value: string) => {
+		const numericValue = value.replace(/\D/g, "");
+		const float = parseFloat(numericValue) / 100;
+
+		if (isNaN(float)) return "";
+		
+		return float.toLocaleString("pt-BR", {
+			style: "currency",
+			currency: "BRL",
+		});
+	};
+
+	const handleChange = (text: string) => {
+		const formatted = formatBRL(text);
+		setPrice(formatted);
+	};
+
+	const getNumericValue = (formatted: string) => {
+		return Number(formatted.replace(/\D/g, "")) / 100;
+	};
+
+	const formatTime = (isoString: string) => {
+		const date = new Date(isoString);
+		const hours = date.getHours().toString().padStart(2, "0");
+		const minutes = date.getMinutes().toString().padStart(2, "0");
+		return `${hours}:${minutes}`;
+	};
 
   	const finish = async () => {
 		if (!selectedCarId || !price || !ride?.origin || !ride?.destination) {
@@ -57,22 +104,20 @@ export default function OfferStepThree() {
 		}
 
 		const formattedRide = {
-			driver_id: "4", //TODO: TRAZER ID DO USUÁRIO DINAMICAMENTE
+			driver_id: user?.id,
 			car_id: selectedCarId,
 			departure_location_lat: String(ride.origin.latitude),
 			departure_location_long: String(ride.origin.longitude),
 			arrive_location_lat: String(ride.destination.latitude),
 			arrive_location_long: String(ride.destination.longitude),
-			departure_time: date.toISOString(),
+			departure_time: formatTime(date.toISOString()),
 			capacity: passengers,
-			ride_fare: Number(price),
+			ride_fare: getNumericValue(price),
 		};
-
-		console.log("🚀 Enviando ride formatado:", formattedRide);
 
 		const token = await SecureStore.getItemAsync("access_token");
 
-		const response = await fetch("http://192.168.15.12:8000/api/cars", {
+		const response = await fetch("http://192.168.15.27:8001/api/rides", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
@@ -121,7 +166,7 @@ export default function OfferStepThree() {
 
 				{step === 2 && (
 					<>
-						<Button title="Selecionar hora" onPress={() => setShowTimePicker(true)} />
+						<Button title="Selecionar horário de saída" onPress={() => setShowTimePicker(true)} />
 
 						{time && (
 							<Text style={{ marginTop: 10 }}>Hora selecionada: {time}</Text>
@@ -173,7 +218,7 @@ export default function OfferStepThree() {
 							style={styles.input}
 							placeholder="Preço da carona (ex: 20.50)"
 							value={price}
-							onChangeText={setPrice}
+							onChangeText={handleChange}
 							keyboardType="numeric"
 						/>
 					</>
@@ -181,22 +226,31 @@ export default function OfferStepThree() {
 
 				{step === 5 && (
 					<>
-					<Text style={styles.label}>Selecione o veículo:</Text>
-					<FlatList
-						data={cars}
-						keyExtractor={(c) => c.id}
-						renderItem={({ item }) => (
-						<TouchableOpacity
-							style={styles.radioRow}
-							onPress={() => setSelectedCarId(item.id)}
-						>
-							<View style={styles.radio}>
-							{selectedCarId === item.id && <View style={styles.radioSelected} />}
-							</View>
-							<Text>{item.name}</Text>
-						</TouchableOpacity>
-						)}
-					/>
+						<Text style={styles.label}>Selecione o veículo:</Text>
+						<FlatList
+							data={cars}
+							keyExtractor={(item) => item.id.toString()}
+							renderItem={({ item }) => {
+								const isSelected = selectedCarId === item.id;
+								return (
+									<TouchableOpacity
+										style={[
+											styles.carItem,
+											isSelected && styles.carItemSelected
+										]}
+										onPress={() => setSelectedCarId(item.id)}
+									>
+										<View style={styles.radio}>
+											{isSelected && <View style={styles.radioSelected} />}
+										</View>
+										<View>
+											<Text style={styles.carTitle}>{`${item.brand} ${item.model}`}</Text>
+											<Text style={styles.carPlate}>{item.plate.toUpperCase()}</Text>
+										</View>
+									</TouchableOpacity>
+								);
+							}}
+						/>
 					</>
 				)}
 			</View>
@@ -290,5 +344,30 @@ const styles = StyleSheet.create({
 		marginBottom: 8,
 		alignItems:"center",
 	},
+	carItem: {
+	flexDirection: "row",
+	alignItems: "center",
+	backgroundColor: "#f2f2f2",
+	padding: 12,
+	borderRadius: 8,
+	marginBottom: 10,
+	borderWidth: 1,
+	borderColor: "#ccc",
+},
+
+carItemSelected: {
+	borderColor: "#141e61",
+	backgroundColor: "#e0e8ff",
+},
+
+carTitle: {
+	fontSize: 16,
+	fontWeight: "bold",
+},
+
+carPlate: {
+	fontSize: 14,
+	color: "#555",
+},
 });
 

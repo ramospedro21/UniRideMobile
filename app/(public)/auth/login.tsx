@@ -23,7 +23,7 @@ export default function LoginScreen() {
 
     try {
       setLoading(true);
-      const response = await fetch("http://192.168.15.10:8001/api/login", {
+      const response = await fetch("http://192.168.15.27:8001/api/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -41,7 +41,7 @@ export default function LoginScreen() {
         throw new Error("Token não encontrado na resposta.");
       }
 
-      await signIn(data.access_token); // Armazena no AuthProvider
+      await signIn(data.access_token, data.user); // Armazena no AuthProvider
 
     } catch (error: any) {
       Alert.alert("Erro", error.message);
