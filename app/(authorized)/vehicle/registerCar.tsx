@@ -13,6 +13,7 @@ import {
 export default function VehicleRegisterScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+	const apiUrl = process.env.EXPO_PUBLIC_API_URL;
 
   const [form, setForm] = useState({
     driver_id: 4,
@@ -34,7 +35,7 @@ export default function VehicleRegisterScreen() {
 
       const token = await SecureStore.getItemAsync("access_token");
 
-      const response = await fetch("http://192.168.15.27:8000/api/cars", {
+      const response = await fetch(`${apiUrl}/cars`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

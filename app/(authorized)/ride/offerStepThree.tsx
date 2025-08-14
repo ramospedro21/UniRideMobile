@@ -28,6 +28,7 @@ export default function OfferStepThree() {
 	const [price, setPrice] = useState("");
 	const [cars, setCars] = useState<any[]>([]);
 	const [selectedCarId, setSelectedCarId] = useState<string | null>(null);
+	const apiUrl = process.env.EXPO_PUBLIC_API_URL;
 
 	useEffect(() => {
 		const loadData = async () => {
@@ -55,7 +56,7 @@ export default function OfferStepThree() {
 	const fetchUserCars = async () => {
 
 		const token = await SecureStore.getItemAsync("access_token");
-		const response = await fetch(`http://192.168.15.27:8001/api/getCarsByUser/${user?.id}`, {
+		const response = await fetch(`${apiUrl}/getCarsByUser/${user?.id}`, {
 			headers: {
 				Authorization: `Bearer ${token}`,
 			},
@@ -117,7 +118,7 @@ export default function OfferStepThree() {
 
 		const token = await SecureStore.getItemAsync("access_token");
 
-		const response = await fetch("http://192.168.15.27:8001/api/rides", {
+		const response = await fetch(`${apiUrl}/rides`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",

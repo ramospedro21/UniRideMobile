@@ -27,6 +27,7 @@ export default function RegisterScreen() {
     driverCode: "",
     photo: null as string | null,
   });
+	const apiUrl = process.env.EXPO_PUBLIC_API_URL;
 
   const handlePickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -43,7 +44,7 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://192.168.15.27:8001/api/register", {
+      const response = await fetch(`${apiUrl}/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

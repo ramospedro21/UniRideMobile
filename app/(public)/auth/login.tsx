@@ -9,6 +9,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const apiUrl = process.env.EXPO_PUBLIC_API_URL;
 
   const handleLogin = async () => {
     if (!email) {
@@ -22,8 +23,7 @@ export default function LoginScreen() {
     }
 
     try {
-      setLoading(true);
-      const response = await fetch("http://192.168.15.27:8001/api/login", {
+      const response = await fetch(`${apiUrl}/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
