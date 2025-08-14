@@ -41,7 +41,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signIn = async (newToken: string, userData: User) => {
-    console.log(userData);
     await SecureStore.setItemAsync("access_token", newToken);
     await SecureStore.setItemAsync("user", JSON.stringify(userData));
     setToken(newToken);

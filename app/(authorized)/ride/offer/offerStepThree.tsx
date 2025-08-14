@@ -40,7 +40,6 @@ export default function OfferStepThree() {
 
 				const userCars = await fetchUserCars();
 				setCars(userCars);
-				console.log(cars);
 			} catch (error) {
 				console.error("Erro ao carregar dados da tela:", error);
 				Alert.alert("Erro", "Não foi possível carregar os veículos.");

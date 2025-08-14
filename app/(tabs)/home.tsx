@@ -12,14 +12,14 @@ export default function HomeScreen() {
     const hasCar = await hasRegisteredCar();
 
     if (hasCar) {
-      router.push("/(authorized)/ride/offerStepOne");
+      router.push("/(authorized)/ride/offer/offerStepOne");
     } else {
       router.push("/(authorized)/vehicle/requireCar");
     }
   };
 
   const handleSearchRide = () => {
-    router.push("/(authorized)/ride/search");
+    router.push("/(authorized)/ride/search/searchRideStepOne");
   };
 
   const handleTrips = () => {
@@ -42,7 +42,7 @@ export default function HomeScreen() {
       {/* localização */}
       <View style={{ alignItems: "center", marginTop: 20 }}>
         <TouchableOpacity style={styles.locationButton}>
-          <Text style={styles.locationText}>Olá {user?.name}, Qual sua localização?</Text>
+          <Text style={styles.locationText}>Olá {user?.name}, O que procura hoje?</Text>
         </TouchableOpacity>
       </View>
 
@@ -52,28 +52,28 @@ export default function HomeScreen() {
 
       {/* Card Oferecer carona */}
       <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>Oferecer carona</Text>
-          <FontAwesome5 name="car" size={20} color="black" />
-        </View>
-        <Text style={styles.cardText}>
-          Compartilhe uma vaga no seu carro com outros usuários indo para o mesmo destino.
-        </Text>
         <TouchableOpacity onPress={handleOfferRide}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>Oferecer carona</Text>
+            <FontAwesome5 name="car" size={20} color="black" />
+          </View>
+          <Text style={styles.cardText}>
+            Compartilhe uma vaga no seu carro com outros usuários indo para o mesmo destino.
+          </Text>
           <Text style={styles.continue}>Continuar</Text>
         </TouchableOpacity>
       </View>
 
       {/* Card Buscar carona */}
       <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>Buscar carona</Text>
-          <MaterialIcons name="event-seat" size={20} color="black" />
-        </View>
-        <Text style={styles.cardText}>
-          Encontre uma carona disponível e viaje com mais economia e praticidade.
-        </Text>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={handleSearchRide}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>Buscar carona</Text>
+            <MaterialIcons name="event-seat" size={20} color="black" />
+          </View>
+          <Text style={styles.cardText}>
+            Encontre uma carona disponível e viaje com mais economia e praticidade.
+          </Text>
           <Text style={styles.continue}>Continuar</Text>
         </TouchableOpacity>
       </View>

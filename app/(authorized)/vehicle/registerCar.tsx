@@ -47,14 +47,13 @@ export default function VehicleRegisterScreen() {
       const data = await response.json();
 
       if (!response.ok) {
-        console.log(data);
         const message = data?.errors || "Erro ao cadastrar o veículo.";
         throw new Error(message);
       }
 
       Alert.alert("Sucesso", "Veículo cadastrado com sucesso!");
 
-      router.push("/(authorized)/ride/offerStepOne");
+      router.push("/(authorized)/ride/offer/offerStepOne");
 
     } catch (error: any) {
       Alert.alert("Erro", error.message || "Erro ao enviar os dados.");

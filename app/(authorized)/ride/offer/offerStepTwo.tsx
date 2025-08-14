@@ -1,5 +1,5 @@
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   FlatList,
@@ -8,16 +8,13 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 
 const MAPBOX_TOKEN = "pk.eyJ1IjoicmFtb3NwZWRybzIxIiwiYSI6ImNtZDY3dXE1ejA2aTcybHEyam9vdjl6a3gifQ.0exFeD6rPB0vkWF-StaUXw";
 
-type Coordinates = {
-  latitude: number;
-  longitude: number;
-};
+type Coordinates = { latitude: number; longitude: number };
 
 type Ride = {
   origin: Coordinates;
@@ -30,46 +27,46 @@ type Ride = {
   departure_time: string | null;
 };
 
-export default function OfferStepOne() {
+export default function OfferStepTwo() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const mapRef = useRef<MapView>(null);
+
+  const [ride, setRide] = useState<Ride | null>(null);
   const [address, setAddress] = useState("");
   const [suggestions, setSuggestions] = useState<any[]>([]);
-  const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
-  const [ride, setRide] = useState<Ride>({
-    origin: { latitude: 0, longitude: 0 },
-    destination: null,
-    driver_id: null,
-    car_id: null,
-    price: null,
-    cost: null,
-    passengers: null,
-    departure_time: null,
-  });
+  const [selectCoords, setSelectCoords] = useState<Coordinates | null>(null);
 
-  // Autocomplete
   useEffect(() => {
-    if (address.length < 3) {
+    const rideParam = params.ride as string | undefined;
+    if (rideParam) {
+      try {
+        setRide(JSON.parse(rideParam));
+      } catch {
+        console.error("Erro ao ler ride");
+      }
+    }
+  }, [params.ride]);
+
+  useEffect(() => {
+    if (address.length < 2) {
       setSuggestions([]);
       return;
     }
-
-    const delay = setTimeout(() => {
+    const timeout = setTimeout(() => {
       fetch(
         `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
           address
-        )}.json?access_token=${MAPBOX_TOKEN}&limit=5&language=pt-BR`
+        )}.json?access_token=${MAPBOX_TOKEN}&autocomplete=true&limit=7&language=pt-BR`
       )
-        .then(res => res.json())
-        .then(data => {
-          setSuggestions(data.features || []);
-        })
-        .catch(err => {
-          console.log(err);
-          setSuggestions([]);
-        });
-    }, 400);
+        .then((res) => res.json())
+        .then((data) =>
+          setSuggestions(Array.isArray(data.features) ? data.features : [])
+        )
+        .catch(() => setSuggestions([]));
+    }, 300);
 
-    return () => clearTimeout(delay);
+    return () => clearTimeout(timeout);
   }, [address]);
 
   const handleSelectSuggestion = (item: any) => {
@@ -77,28 +74,31 @@ export default function OfferStepOne() {
     setAddress(item.place_name);
     setSuggestions([]);
 
-    const coords = {
-      latitude: item.center[1],
+    const coords: Coordinates = {
       longitude: item.center[0],
+      latitude: item.center[1],
     };
-    setCoordinates(coords);
+
+    setSelectCoords(coords);
+
+    // Centraliza mapa na nova localização
+    mapRef.current?.animateToRegion({
+      ...coords,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    });
   };
 
   const handleSaveAndNext = () => {
-    if (!coordinates) {
-      Alert.alert("Erro", "Selecione um endereço válido.");
+    if (!ride || !selectCoords) {
+      Alert.alert("Erro", "Selecione um destino válido.");
       return;
     }
 
-    const updatedRide: Ride = {
-      ...ride,
-      origin: coordinates,
-    };
-
     router.push({
-      pathname: "/(authorized)/ride/offerStepTwo",
+      pathname: "/(authorized)/ride/offer/offerStepThree",
       params: {
-        ride: JSON.stringify(updatedRide),
+        ride: JSON.stringify({ ...ride, destination: selectCoords }),
       },
     });
   };
@@ -109,11 +109,11 @@ export default function OfferStepOne() {
         <Text style={styles.back}>← Voltar</Text>
       </TouchableOpacity>
 
-      <Text style={styles.title}>Endereço de partida</Text>
+      <Text style={styles.title}>Destino da carona</Text>
 
       <TextInput
         style={styles.input}
-        placeholder="Digite o endereço"
+        placeholder="Digite o destino..."
         value={address}
         onChangeText={setAddress}
       />
@@ -136,18 +136,29 @@ export default function OfferStepOne() {
       )}
 
       <View style={styles.mapContainer}>
-        {coordinates && (
-          <MapView
-            style={styles.map}
-            initialRegion={{
-              ...coordinates,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            }}
-          >
-            <Marker coordinate={coordinates} />
-          </MapView>
-        )}
+        <MapView
+          ref={mapRef}
+          style={styles.map}
+          initialRegion={{
+            latitude: ride?.origin.latitude ?? -23.2,
+            longitude: ride?.origin.longitude ?? -45.9,
+            latitudeDelta: 0.05,
+            longitudeDelta: 0.05,
+          }}
+        >
+          <Marker
+            coordinate={ride?.origin!}
+            pinColor="green"
+            title="Origem"
+          />
+          {selectCoords && (
+            <Marker
+              coordinate={selectCoords}
+              pinColor="blue"
+              title="Destino"
+            />
+          )}
+        </MapView>
       </View>
 
       <TouchableOpacity style={styles.saveBtn} onPress={handleSaveAndNext}>
@@ -163,13 +174,13 @@ const styles = StyleSheet.create({
   title: { fontSize: 18, fontWeight: "bold", marginBottom: 12 },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#888",
     padding: 14,
     borderRadius: 10,
     marginBottom: 4,
   },
   suggestionsList: {
-    maxHeight: 150,
+    maxHeight: 180,
     backgroundColor: "#fff",
     borderColor: "#ccc",
     borderWidth: 1,
@@ -182,7 +193,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "#eee",
   },
   mapContainer: {
-    height: 300,
+    flex: 1,
     borderRadius: 12,
     overflow: "hidden",
     marginBottom: 20,
@@ -196,6 +207,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 30,
     alignItems: "center",
+    marginBottom: 20,
   },
   saveText: {
     color: "#fff",

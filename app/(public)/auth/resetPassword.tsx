@@ -46,7 +46,6 @@ export default function LoginScreen() {
 
     } catch (error: any) {
       Alert.alert("Erro", error.message);
-      console.log(error);
     } finally {
       setLoading(false);
     }

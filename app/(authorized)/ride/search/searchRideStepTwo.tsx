@@ -1,14 +1,16 @@
+import { useAuthSession } from "@/providers/AuthProvider";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 import { useEffect, useRef, useState } from "react";
 import {
-  Alert,
-  FlatList,
-  Keyboard,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    FlatList,
+    Keyboard,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 
@@ -17,14 +19,8 @@ const MAPBOX_TOKEN = "pk.eyJ1IjoicmFtb3NwZWRybzIxIiwiYSI6ImNtZDY3dXE1ejA2aTcybHE
 type Coordinates = { latitude: number; longitude: number };
 
 type Ride = {
-  origin: Coordinates;
-  destination: Coordinates | null;
-  driver_id: string | null;
-  car_id: string | null;
-  price: number | null;
-  cost: number | null;
-  passengers: number | null;
-  departure_time: string | null;
+  departure: Coordinates;
+  arrival: Coordinates | null;
 };
 
 export default function OfferStepTwo() {
@@ -32,16 +28,18 @@ export default function OfferStepTwo() {
   const params = useLocalSearchParams();
   const mapRef = useRef<MapView>(null);
 
-  const [ride, setRide] = useState<Ride | null>(null);
+  const [rideSearchParams, setRideSearchParams] = useState<Ride | null>(null);
   const [address, setAddress] = useState("");
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [selectCoords, setSelectCoords] = useState<Coordinates | null>(null);
+  const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+  const { user } = useAuthSession();
 
   useEffect(() => {
     const rideParam = params.ride as string | undefined;
     if (rideParam) {
       try {
-        setRide(JSON.parse(rideParam));
+        setRideSearchParams(JSON.parse(rideParam));
       } catch {
         console.error("Erro ao ler ride");
       }
@@ -89,18 +87,49 @@ export default function OfferStepTwo() {
     });
   };
 
-  const handleSaveAndNext = () => {
-    if (!ride || !selectCoords) {
+  const handleSaveAndNext = async () => {
+    if (!rideSearchParams || !selectCoords) {
       Alert.alert("Erro", "Selecione um destino válido.");
       return;
     }
 
-    router.push({
-      pathname: "/(authorized)/ride/offerStepThree",
-      params: {
-        ride: JSON.stringify({ ...ride, destination: selectCoords }),
-      },
+    // Atualiza os parâmetros da carona com o destino selecionado
+    const updatedRide: Ride = {
+      ...rideSearchParams,
+      arrival: selectCoords,
+    };
+
+    const token = await SecureStore.getItemAsync("access_token");
+
+    const params = new URLSearchParams({
+        departure_lat: String(updatedRide.departure.latitude),
+        departure_long: String(updatedRide.departure.longitude),
+        arrival_lat: String(updatedRide.arrival?.latitude ?? ""),
+        arrival_long: String(updatedRide.arrival?.longitude ?? ""),
     });
+
+    try {
+
+        const url = `${apiUrl}/rides?${params.toString()}`;
+
+        const response = await fetch(url, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        const data = await response.json();
+
+        router.push({
+            pathname: "/(authorized)/ride/search/searchRideStepThree",
+            params: { rides: JSON.stringify(data.data) }
+        });
+    } catch (error) {
+        console.error("Erro ao salvar carona:", error);
+        return;
+    }
   };
 
   return (
@@ -140,14 +169,14 @@ export default function OfferStepTwo() {
           ref={mapRef}
           style={styles.map}
           initialRegion={{
-            latitude: ride?.origin.latitude ?? -23.2,
-            longitude: ride?.origin.longitude ?? -45.9,
+            latitude: rideSearchParams?.departure.latitude ?? -23.2,
+            longitude: rideSearchParams?.departure.longitude ?? -45.9,
             latitudeDelta: 0.05,
             longitudeDelta: 0.05,
           }}
         >
           <Marker
-            coordinate={ride?.origin!}
+            coordinate={rideSearchParams?.departure!}
             pinColor="green"
             title="Origem"
           />
