@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -20,6 +20,7 @@ type Ride = {
 
 export default function RidesListScreen() {
   const params = useLocalSearchParams();
+  const router = useRouter();
 
   const rides: Ride[] = (() => {
     if (!params.rides) return [];
@@ -30,6 +31,15 @@ export default function RidesListScreen() {
       return [];
     }
   })();
+
+  const showRideDetails = (ride: Ride) => {
+    router.push({
+      pathname: "/(authorized)/ride/rideInfos",
+      params: {
+        ride: JSON.stringify(ride),
+      },
+    });
+  }
 
   if (rides.length === 0) {
     return (
@@ -50,7 +60,7 @@ export default function RidesListScreen() {
           </Text>
         }
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={() => { /* navegar para detalhes */ }}>
+          <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={() => { showRideDetails(item); }}>
             <View style={styles.cardContent}>
               <View style={{ flex: 1 }}>
                 <View style={styles.row}>
