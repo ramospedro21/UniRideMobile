@@ -1,4 +1,5 @@
 import { useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 import { useEffect, useState } from "react";
 import {
   Alert,
@@ -13,6 +14,9 @@ import {
 import MapView, { Marker } from "react-native-maps";
 
 const MAPBOX_TOKEN = "pk.eyJ1IjoicmFtb3NwZWRybzIxIiwiYSI6ImNtZDY3dXE1ejA2aTcybHEyam9vdjl6a3gifQ.0exFeD6rPB0vkWF-StaUXw";
+const UNIP_LAT = Number(process.env.UNIP_LATITUDE) || -23.2551934;
+const UNIP_LONG = Number(process.env.UNIP_LONGITUDE) || -45.9511284;
+const apiUrl = process.env.EXPO_PUBLIC_API_URL;
 
 type Coordinates = {
   latitude: number;
@@ -24,14 +28,14 @@ type Ride = {
   arrival: Coordinates | null;
 };
 
-export default function OfferStepOne() {
+export default function searchRideStepOne() {
   const router = useRouter();
   const [address, setAddress] = useState("");
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
   const [rideSearchParams, setRideSearchParams] = useState<Ride>({
     departure: { latitude: 0, longitude: 0 },
-    arrival: { latitude: 0, longitude: 0 },
+    arrival: { latitude: UNIP_LAT, longitude: UNIP_LONG },
   });
 
   // Autocomplete
@@ -71,9 +75,10 @@ export default function OfferStepOne() {
     setCoordinates(coords);
   };
 
-  const handleSaveAndNext = () => {
+  const handleSaveAndNext = async () => {
+
     if (!coordinates) {
-      Alert.alert("Erro", "Selecione um endereço válido.");
+      Alert.alert("Erro", "Selecione um destino válido.");
       return;
     }
 
@@ -82,12 +87,38 @@ export default function OfferStepOne() {
       departure: coordinates,
     };
 
-    router.push({
-      pathname: "/(authorized)/ride/search/searchRideStepTwo",
-      params: {
-        ride: JSON.stringify(updatedRide),
-      },
+    const token = await SecureStore.getItemAsync("access_token");
+
+    const params = new URLSearchParams({
+        departure_lat: String(updatedRide.departure.latitude),
+        departure_long: String(updatedRide.departure.longitude),
+        arrival_lat: String(updatedRide.arrival?.latitude ?? ""),
+        arrival_long: String(updatedRide.arrival?.longitude ?? ""),
     });
+
+    try {
+
+        const url = `${apiUrl}/rides?${params.toString()}`;
+
+        const response = await fetch(url, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        const data = await response.json();
+
+        router.push({
+            pathname: "/(authorized)/ride/search/searchRideStepThree",
+            params: { rides: JSON.stringify(data.data) }
+        });
+
+    } catch (error) {
+        console.error("Erro ao salvar carona:", error);
+        return;
+    }
   };
 
   return (

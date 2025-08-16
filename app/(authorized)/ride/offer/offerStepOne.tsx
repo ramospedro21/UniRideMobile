@@ -13,6 +13,8 @@ import {
 import MapView, { Marker } from "react-native-maps";
 
 const MAPBOX_TOKEN = "pk.eyJ1IjoicmFtb3NwZWRybzIxIiwiYSI6ImNtZDY3dXE1ejA2aTcybHEyam9vdjl6a3gifQ.0exFeD6rPB0vkWF-StaUXw";
+const UNIP_LAT = Number(process.env.UNIP_LATITUDE) || -23.2551934;
+const UNIP_LONG = Number(process.env.UNIP_LONGITUDE) || -45.9511284;
 
 type Coordinates = {
   latitude: number;
@@ -37,7 +39,7 @@ export default function OfferStepOne() {
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
   const [ride, setRide] = useState<Ride>({
     origin: { latitude: 0, longitude: 0 },
-    destination: null,
+    destination: { latitude: UNIP_LAT, longitude: UNIP_LONG },
     driver_id: null,
     car_id: null,
     price: null,
@@ -95,7 +97,7 @@ export default function OfferStepOne() {
     };
 
     router.push({
-      pathname: "/(authorized)/ride/offer/offerStepTwo",
+      pathname: "/(authorized)/ride/offer/offerStepThree",
       params: {
         ride: JSON.stringify(updatedRide),
       },
@@ -108,7 +110,7 @@ export default function OfferStepOne() {
         <Text style={styles.back}>← Voltar</Text>
       </TouchableOpacity>
 
-      <Text style={styles.title}>Endereço de partida</Text>
+      <Text style={styles.title}>Informe o ponto de encontro</Text>
 
       <TextInput
         style={styles.input}

@@ -12,10 +12,11 @@ type Ride = {
   arrive_location_lat: string;
   arrive_location_long: string;
   departure_time: string;
-  capacity: number;
+  available_seats: number;
   ride_fare: string;
   departure_distance?: number;
   arrival_distance?: number;
+  week_days: string[];
 };
 
 export default function RidesListScreen() {
@@ -64,17 +65,29 @@ export default function RidesListScreen() {
             <View style={styles.cardContent}>
               <View style={{ flex: 1 }}>
                 <View style={styles.row}>
+                  <Text style={styles.label}>🕒 id:</Text>
+                  <Text style={styles.value}>{item.id}</Text>
+                </View>
+                <View style={styles.row}>
                   <Text style={styles.label}>🕒 Saída:</Text>
                   <Text style={styles.value}>{item.departure_time}</Text>
                 </View>
                 <View style={styles.row}>
-                  <Text style={styles.label}>👥 Lugares:</Text>
-                  <Text style={styles.value}>{item.capacity}</Text>
+                  <Text style={styles.label}>👥 Lugares disponíveis:</Text>
+                  <Text style={styles.value}>{item.available_seats}</Text>
                 </View>
                 <View style={styles.row}>
                   <Text style={styles.label}>💰 Valor:</Text>
                   <Text style={styles.value}>R$ {item.ride_fare}</Text>
                 </View>
+                {item.week_days && item.week_days.length > 0 && (
+                  <View style={styles.row}>
+                    <Text style={styles.label}>📅 Dias:</Text>
+                    <Text style={styles.value}>
+                      {item.week_days.join(", ")}
+                    </Text>
+                  </View>
+                )}
               </View>
               <Ionicons name="chevron-forward" size={24} color="#888" />
             </View>
@@ -119,6 +132,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f2f2f2",
+    marginTop: 50,
   },
   introText: {
     fontSize: 16,

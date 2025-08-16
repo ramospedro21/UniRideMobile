@@ -1,3 +1,4 @@
+import { useAuthSession } from "@/providers/AuthProvider";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { useState } from "react";
@@ -14,9 +15,10 @@ export default function VehicleRegisterScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 	const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+  const { user } = useAuthSession();
 
   const [form, setForm] = useState({
-    driver_id: 4,
+    driver_id: user?.id || 0,
     brand: "",
     model: "",
     plate: "",

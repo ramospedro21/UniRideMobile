@@ -28,6 +28,7 @@ export default function OfferStepThree() {
 	const [price, setPrice] = useState("");
 	const [cars, setCars] = useState<any[]>([]);
 	const [selectedCarId, setSelectedCarId] = useState<string | null>(null);
+	const [selectedDays, setSelectedDays] = useState<number[]>([]);
 	const apiUrl = process.env.EXPO_PUBLIC_API_URL;
 
 	useEffect(() => {
@@ -106,11 +107,12 @@ export default function OfferStepThree() {
 		const formattedRide = {
 			driver_id: user?.id,
 			car_id: selectedCarId,
+			week_days: selectedDays,
 			departure_location_lat: String(ride.origin.latitude),
 			departure_location_long: String(ride.origin.longitude),
 			arrive_location_lat: String(ride.destination.latitude),
 			arrive_location_long: String(ride.destination.longitude),
-			departure_time: formatTime(date.toISOString()),
+			departure_time: time,
 			capacity: passengers,
 			ride_fare: getNumericValue(price),
 		};
@@ -147,20 +149,48 @@ export default function OfferStepThree() {
 			<View style={styles.middle}>
 				{step === 1 && (
 					<>
-					<Button title="Selecionar Data" onPress={() => setShowDatePicker(true)} />
-					<Text>Selecionado: {date.toLocaleDateString()}</Text>
-					{showDatePicker && (
-						<DateTimePicker
-						value={date}
-						mode="date"
-						display="spinner"
-						onChange={(_, d) => {
-							setShowDatePicker(false);
-							if (d) setDate(d);
-						}}
-						style={styles.counterContainer}
-						/>
-					)}
+						<Text style={styles.label}>Selecione os dias da semana:</Text>
+						<View style={styles.weekDaysContainer}>
+						{[
+							{ id: 0, label: "Seg" },
+							{ id: 1, label: "Ter" },
+							{ id: 2, label: "Qua" },
+							{ id: 3, label: "Qui" },
+							{ id: 4, label: "Sex" },
+							{ id: 5, label: "Sáb" },
+							{ id: 6, label: "Dom" },
+						].map((day) => (
+							<TouchableOpacity
+								key={day.id}
+								style={[
+									styles.dayButton,
+									selectedDays.includes(day.id) && styles.dayButtonSelected
+								]}
+								onPress={() => {
+									if (selectedDays.includes(day.id)) {
+										setSelectedDays(selectedDays.filter(d => d !== day.id));
+									} else {
+										setSelectedDays([...selectedDays, day.id]);
+									}
+								}}
+								>
+								<Text
+									style={[
+										styles.dayText,
+										selectedDays.includes(day.id) && styles.dayTextSelected
+									]}
+								>
+									{day.label}
+								</Text>
+							</TouchableOpacity>
+						))}
+						</View>
+
+						<Text style={styles.selectedText}>
+						Dias selecionados: {selectedDays.length > 0
+							? selectedDays.map(d => ["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"][d]).join(", ")
+							: "Nenhum"}
+						</Text>
 					</>
 				)}
 
@@ -345,29 +375,60 @@ const styles = StyleSheet.create({
 		alignItems:"center",
 	},
 	carItem: {
-	flexDirection: "row",
-	alignItems: "center",
-	backgroundColor: "#f2f2f2",
-	padding: 12,
-	borderRadius: 8,
-	marginBottom: 10,
-	borderWidth: 1,
-	borderColor: "#ccc",
-},
+		flexDirection: "row",
+		alignItems: "center",
+		backgroundColor: "#f2f2f2",
+		padding: 12,
+		borderRadius: 8,
+		marginBottom: 10,
+		borderWidth: 1,
+		borderColor: "#ccc",
+	},
 
-carItemSelected: {
-	borderColor: "#141e61",
-	backgroundColor: "#e0e8ff",
-},
+	carItemSelected: {
+		borderColor: "#141e61",
+		backgroundColor: "#e0e8ff",
+	},
 
-carTitle: {
-	fontSize: 16,
-	fontWeight: "bold",
-},
+	carTitle: {
+		fontSize: 16,
+		fontWeight: "bold",
+	},
 
-carPlate: {
-	fontSize: 14,
-	color: "#555",
-},
+	carPlate: {
+		fontSize: 14,
+		color: "#555",
+	},
+	weekDaysContainer: {
+		flexDirection: "row",
+		flexWrap: "wrap",
+		gap: 8,
+		marginTop: 10,
+		justifyContent: "center"
+	},
+	dayButton: {
+		paddingVertical: 8,
+		paddingHorizontal: 14,
+		borderRadius: 6,
+		backgroundColor: "#eee",
+		margin: 4
+	},
+	dayButtonSelected: {
+		backgroundColor: "#007BFF"
+	},
+	dayText: {
+		fontSize: 14,
+		color: "#000"
+	},
+	dayTextSelected: {
+		color: "#fff",
+		fontWeight: "bold"
+	},
+	selectedText: {
+		marginTop: 10,
+		fontSize: 14,
+		color: "#333"
+	},
+
 });
 
