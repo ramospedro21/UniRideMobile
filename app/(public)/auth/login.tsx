@@ -41,7 +41,7 @@ export default function LoginScreen() {
         throw new Error("Token não encontrado na resposta.");
       }
 
-      await signIn(data.access_token, data.user); // Armazena no AuthProvider
+      await signIn(data.access_token, data.user);
 
     } catch (error: any) {
       Alert.alert("Erro", error.message);

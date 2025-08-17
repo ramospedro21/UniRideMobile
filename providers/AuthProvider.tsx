@@ -19,6 +19,36 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
+// Configura handler de notificações em primeiro plano
+Notifications.setNotificationHandler({
+  handleNotification: async (): Promise<Notifications.NotificationBehavior> => ({
+    shouldShowAlert: true,
+    shouldSetBadge: false,
+    shouldPlaySound: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
+
+
+
+// Função para disparar notificações locais
+export const showLocalNotification = async (
+  title: string,
+  body: string,
+  data: Record<string, unknown> = {}
+) => {
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title,
+      body,
+      data,
+      sound: "default",
+    },
+    trigger: null, // dispara imediatamente
+  });
+};
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -38,9 +68,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(false);
     };
     loadData();
+
+    // Listener para notificações recebidas em primeiro plano
+    const subscription = Notifications.addNotificationReceivedListener(
+      (notification) => {
+        console.log("Notificação recebida em primeiro plano:", notification);
+
+        // Dispara notificação local para mostrar alerta ao usuário
+        showLocalNotification(
+          notification.request.content.title || "Nova notificação",
+          notification.request.content.body || "",
+          notification.request.content.data || {}
+        );
+      }
+    );
+
+    return () => subscription.remove();
   }, []);
 
-  // Solicita permissão e registra o token push
   const registerForPushNotifications = async () => {
     let finalStatus;
 
