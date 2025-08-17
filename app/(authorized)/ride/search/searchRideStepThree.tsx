@@ -17,6 +17,22 @@ type Ride = {
   departure_distance?: number;
   arrival_distance?: number;
   week_days: string[];
+  departure_address?: string;
+  arrival_address?: string;  
+  driver: {
+    name: string;
+    surname: string;
+  }
+};
+
+const weekDayMap: Record<string, string> = {
+  monday: "Segunda",
+  tuesday: "Terça",
+  wednesday: "Quarta",
+  thursday: "Quinta",
+  friday: "Sexta",
+  saturday: "Sábado",
+  sunday: "Domingo",
 };
 
 export default function RidesListScreen() {
@@ -40,7 +56,16 @@ export default function RidesListScreen() {
         ride: JSON.stringify(ride),
       },
     });
-  }
+  };
+
+  const formatTime = (time: string) => {
+    if (!time) return "";
+    return time.slice(0, 5); // pega apenas HH:mm
+  };
+
+  const formatWeekDays = (days: string[]) => {
+    return days.map((day) => weekDayMap[day.toLowerCase()] || day).join(", ");
+  };
 
   if (rides.length === 0) {
     return (
@@ -61,31 +86,49 @@ export default function RidesListScreen() {
           </Text>
         }
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={() => { showRideDetails(item); }}>
+          <TouchableOpacity
+            style={styles.card}
+            activeOpacity={0.7}
+            onPress={() => showRideDetails(item)}
+          >
             <View style={styles.cardContent}>
               <View style={{ flex: 1 }}>
                 <View style={styles.row}>
-                  <Text style={styles.label}>🕒 id:</Text>
-                  <Text style={styles.value}>{item.id}</Text>
+                  <Text style={styles.label}>🚗 Motorista:</Text>
+                  <Text style={styles.value}>
+                    {item.driver.name} {item.driver.surname}
+                  </Text>
                 </View>
+
+                <View style={[styles.row, { flexDirection: "column" }]}>
+                  <Text style={styles.label}>📍 Origem:</Text>
+                  <Text style={styles.value}>{item.departure_address}</Text>
+                </View>
+
+                <View style={[styles.row, { flexDirection: "column" }]}>
+                  <Text style={styles.label}>🏁 Destino:</Text>
+                  <Text style={styles.value}>{item.arrival_address}</Text>
+                </View>
+
                 <View style={styles.row}>
                   <Text style={styles.label}>🕒 Saída:</Text>
-                  <Text style={styles.value}>{item.departure_time}</Text>
+                  <Text style={styles.value}>{formatTime(item.departure_time)}</Text>
                 </View>
+
                 <View style={styles.row}>
                   <Text style={styles.label}>👥 Lugares disponíveis:</Text>
                   <Text style={styles.value}>{item.available_seats}</Text>
                 </View>
+
                 <View style={styles.row}>
                   <Text style={styles.label}>💰 Valor:</Text>
                   <Text style={styles.value}>R$ {item.ride_fare}</Text>
                 </View>
+
                 {item.week_days && item.week_days.length > 0 && (
                   <View style={styles.row}>
                     <Text style={styles.label}>📅 Dias:</Text>
-                    <Text style={styles.value}>
-                      {item.week_days.join(", ")}
-                    </Text>
+                    <Text style={styles.value}>{formatWeekDays(item.week_days)}</Text>
                   </View>
                 )}
               </View>
@@ -93,7 +136,10 @@ export default function RidesListScreen() {
             </View>
           </TouchableOpacity>
         )}
-        contentContainerStyle={[styles.list, { flexGrow: 1, justifyContent: "center" }]}
+        contentContainerStyle={[
+          styles.list,
+          { flexGrow: 1, justifyContent: "center" },
+        ]}
       />
     </View>
   );
@@ -116,9 +162,22 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  row: { flexDirection: "row", justifyContent: "space-between", marginBottom: 6 },
-  label: { fontWeight: "600", color: "#333" },
-  value: { fontWeight: "bold", color: "#000" },
+  row: {
+    flexDirection: "row",
+    marginBottom: 6,
+    flexWrap: "wrap",
+  },
+  label: {
+    fontWeight: "600",
+    color: "#333",
+    marginRight: 6,
+  },
+  value: {
+    fontWeight: "bold",
+    color: "#000",
+    flexShrink: 1,
+    flexWrap: "wrap",
+  },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",

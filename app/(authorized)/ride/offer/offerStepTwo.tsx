@@ -1,216 +1,435 @@
+import { useAuthSession } from "@/providers/AuthProvider";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import * as SecureStore from "expo-secure-store";
+import { useEffect, useState } from "react";
 import {
-  Alert,
-  FlatList,
-  Keyboard,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+	Alert,
+	Button,
+	FlatList,
+	StyleSheet,
+	Text,
+	TextInput,
+	TouchableOpacity,
+	View,
 } from "react-native";
-import MapView, { Marker } from "react-native-maps";
 
-const MAPBOX_TOKEN = "pk.eyJ1IjoicmFtb3NwZWRybzIxIiwiYSI6ImNtZDY3dXE1ejA2aTcybHEyam9vdjl6a3gifQ.0exFeD6rPB0vkWF-StaUXw";
+export default function OfferStepThree() {
+	const router = useRouter();
+	const params = useLocalSearchParams();
+	const [ride, setRide] = useState<any>(null);
+	const { user } = useAuthSession();
+	const [step, setStep] = useState(1);
+	const [date, setDate] = useState(new Date());
+	const [showDatePicker, setShowDatePicker] = useState(false);
+	const [time, setTime] = useState("12:00");
+	const [showTimePicker, setShowTimePicker] = useState(false);
+	const [passengers, setPassengers] = useState(1);
+	const [price, setPrice] = useState("");
+	const [cars, setCars] = useState<any[]>([]);
+	const [selectedCarId, setSelectedCarId] = useState<string | null>(null);
+	const [selectedDays, setSelectedDays] = useState<number[]>([]);
+	const apiUrl = process.env.EXPO_PUBLIC_API_URL;
 
-type Coordinates = { latitude: number; longitude: number };
+	useEffect(() => {
+		const loadData = async () => {
+			try {
+				if (params.ride) {
+					const parsed = JSON.parse(params.ride as string);
+					setRide(parsed);
+				}
 
-type Ride = {
-  origin: Coordinates;
-  destination: Coordinates | null;
-  driver_id: string | null;
-  car_id: string | null;
-  price: number | null;
-  cost: number | null;
-  passengers: number | null;
-  departure_time: string | null;
-};
+				const userCars = await fetchUserCars();
+				setCars(userCars);
+			} catch (error) {
+				console.error("Erro ao carregar dados da tela:", error);
+				Alert.alert("Erro", "Não foi possível carregar os veículos.");
+			}
+		};
 
-export default function OfferStepTwo() {
-  const router = useRouter();
-  const params = useLocalSearchParams();
-  const mapRef = useRef<MapView>(null);
+		loadData();
+	}, []);
+	
+	const next = () => setStep((s) => Math.min(5, s + 1));
+	const back = () => (step > 1 ? setStep((s) => s - 1) : router.back());
 
-  const [ride, setRide] = useState<Ride | null>(null);
-  const [address, setAddress] = useState("");
-  const [suggestions, setSuggestions] = useState<any[]>([]);
-  const [selectCoords, setSelectCoords] = useState<Coordinates | null>(null);
+	const fetchUserCars = async () => {
 
-  useEffect(() => {
-    const rideParam = params.ride as string | undefined;
-    if (rideParam) {
-      try {
-        setRide(JSON.parse(rideParam));
-      } catch {
-        console.error("Erro ao ler ride");
-      }
-    }
-  }, [params.ride]);
+		const token = await SecureStore.getItemAsync("access_token");
+		const response = await fetch(`${apiUrl}/getCarsByUser/${user?.id}`, {
+			headers: {
+				Authorization: `Bearer ${token}`,
+			},
+		});
 
-  useEffect(() => {
-    if (address.length < 2) {
-      setSuggestions([]);
-      return;
-    }
-    const timeout = setTimeout(() => {
-      fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-          address
-        )}.json?access_token=${MAPBOX_TOKEN}&autocomplete=true&limit=7&language=pt-BR`
-      )
-        .then((res) => res.json())
-        .then((data) =>
-          setSuggestions(Array.isArray(data.features) ? data.features : [])
-        )
-        .catch(() => setSuggestions([]));
-    }, 300);
+		if (!response.ok) {
+			throw new Error("Erro ao buscar veículos");
+		}
 
-    return () => clearTimeout(timeout);
-  }, [address]);
+		const data = await response.json();
 
-  const handleSelectSuggestion = (item: any) => {
-    Keyboard.dismiss();
-    setAddress(item.place_name);
-    setSuggestions([]);
+		return data.data;
+	};
 
-    const coords: Coordinates = {
-      longitude: item.center[0],
-      latitude: item.center[1],
-    };
+	const formatBRL = (value: string) => {
+		const numericValue = value.replace(/\D/g, "");
+		const float = parseFloat(numericValue) / 100;
 
-    setSelectCoords(coords);
+		if (isNaN(float)) return "";
+		
+		return float.toLocaleString("pt-BR", {
+			style: "currency",
+			currency: "BRL",
+		});
+	};
 
-    // Centraliza mapa na nova localização
-    mapRef.current?.animateToRegion({
-      ...coords,
-      latitudeDelta: 0.01,
-      longitudeDelta: 0.01,
-    });
-  };
+	const handleChange = (text: string) => {
+		const formatted = formatBRL(text);
+		setPrice(formatted);
+	};
 
-  const handleSaveAndNext = () => {
-    if (!ride || !selectCoords) {
-      Alert.alert("Erro", "Selecione um destino válido.");
-      return;
-    }
+	const getNumericValue = (formatted: string) => {
+		return Number(formatted.replace(/\D/g, "")) / 100;
+	};
 
-    router.push({
-      pathname: "/(authorized)/ride/offer/offerStepThree",
-      params: {
-        ride: JSON.stringify({ ...ride, destination: selectCoords }),
-      },
-    });
-  };
+	const formatTime = (isoString: string) => {
+		const date = new Date(isoString);
+		const hours = date.getHours().toString().padStart(2, "0");
+		const minutes = date.getMinutes().toString().padStart(2, "0");
+		return `${hours}:${minutes}`;
+	};
 
-  return (
-    <View style={styles.container}>
-      <TouchableOpacity onPress={() => router.back()}>
-        <Text style={styles.back}>← Voltar</Text>
-      </TouchableOpacity>
+  	const finish = async () => {
+		if (!selectedCarId || !price || !ride?.departure || !ride?.arrival) {
+			return Alert.alert("Preencha todos os campos antes de continuar");
+		}
 
-      <Text style={styles.title}>Destino da carona</Text>
+		const formattedRide = {
+			driver_id: user?.id,
+			car_id: selectedCarId,
+			week_days: selectedDays,
+			departure_location_lat: String(ride.departure.latitude),
+			departure_location_long: String(ride.departure.longitude),
+			arrive_location_lat: String(ride.arrival.latitude),
+			arrive_location_long: String(ride.arrival.longitude),
+			departure_time: time,
+			capacity: passengers,
+			ride_fare: getNumericValue(price),
+			departure_address: ride.address || "",
+		};
 
-      <TextInput
-        style={styles.input}
-        placeholder="Digite o destino..."
-        value={address}
-        onChangeText={setAddress}
-      />
+		const token = await SecureStore.getItemAsync("access_token");
+console.log(formattedRide);
+		const response = await fetch(`${apiUrl}/rides`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer ${token}`,
+			},
+			body: JSON.stringify(formattedRide),
+		});
 
-      {suggestions.length > 0 && (
-        <FlatList
-          data={suggestions}
-          keyExtractor={(item) => item.id}
-          style={styles.suggestionsList}
-          keyboardShouldPersistTaps="handled"
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.suggestionItem}
-              onPress={() => handleSelectSuggestion(item)}
-            >
-              <Text>{item.place_name}</Text>
-            </TouchableOpacity>
-          )}
-        />
-      )}
+		const data = await response.json();
 
-      <View style={styles.mapContainer}>
-        <MapView
-          ref={mapRef}
-          style={styles.map}
-          initialRegion={{
-            latitude: ride?.origin.latitude ?? -23.2,
-            longitude: ride?.origin.longitude ?? -45.9,
-            latitudeDelta: 0.05,
-            longitudeDelta: 0.05,
-          }}
-        >
-          <Marker
-            coordinate={ride?.origin!}
-            pinColor="green"
-            title="Origem"
-          />
-          {selectCoords && (
-            <Marker
-              coordinate={selectCoords}
-              pinColor="blue"
-              title="Destino"
-            />
-          )}
-        </MapView>
-      </View>
+		if (!response.ok) {
+			const message = data?.errors || "Erro ao registrar a carona.";
+			throw new Error(message);
+		}
 
-      <TouchableOpacity style={styles.saveBtn} onPress={handleSaveAndNext}>
-        <Text style={styles.saveText}>Salvar e continuar</Text>
-      </TouchableOpacity>
-    </View>
-  );
+	  	Alert.alert("Sucesso", "Carona registrada com sucesso!");
+
+	  	router.push("/(tabs)/home");
+	};
+
+	return (
+		<View style={styles.container}>
+			<View style={styles.top}>
+				<Text style={styles.header}>Passo {step} de 5</Text>
+			</View>
+
+			<View style={styles.middle}>
+				{step === 1 && (
+					<>
+						<Text style={styles.label}>Selecione os dias da semana:</Text>
+						<View style={styles.weekDaysContainer}>
+						{[
+							{ id: 0, label: "Seg" },
+							{ id: 1, label: "Ter" },
+							{ id: 2, label: "Qua" },
+							{ id: 3, label: "Qui" },
+							{ id: 4, label: "Sex" },
+							{ id: 5, label: "Sáb" },
+							{ id: 6, label: "Dom" },
+						].map((day) => (
+							<TouchableOpacity
+								key={day.id}
+								style={[
+									styles.dayButton,
+									selectedDays.includes(day.id) && styles.dayButtonSelected
+								]}
+								onPress={() => {
+									if (selectedDays.includes(day.id)) {
+										setSelectedDays(selectedDays.filter(d => d !== day.id));
+									} else {
+										setSelectedDays([...selectedDays, day.id]);
+									}
+								}}
+								>
+								<Text
+									style={[
+										styles.dayText,
+										selectedDays.includes(day.id) && styles.dayTextSelected
+									]}
+								>
+									{day.label}
+								</Text>
+							</TouchableOpacity>
+						))}
+						</View>
+
+						<Text style={styles.selectedText}>
+						Dias selecionados: {selectedDays.length > 0
+							? selectedDays.map(d => ["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"][d]).join(", ")
+							: "Nenhum"}
+						</Text>
+					</>
+				)}
+
+				{step === 2 && (
+					<>
+						<Button title="Selecionar horário de saída" onPress={() => setShowTimePicker(true)} />
+
+						{time && (
+							<Text style={{ marginTop: 10 }}>Hora selecionada: {time}</Text>
+						)}
+
+						{showTimePicker && (
+							<View style={{ marginTop: 10 }}>
+								<DateTimePicker
+								value={date}
+								mode="time"
+								display="spinner"
+								onChange={(event, selectedTime) => {
+									if (event.type === "set" && selectedTime) {
+										const hours = selectedTime.getHours().toString().padStart(2, "0");
+										const minutes = selectedTime.getMinutes().toString().padStart(2, "0");
+										setTime(`${hours}:${minutes}`);
+										setDate(selectedTime);
+									} else {
+										setShowTimePicker(false);
+									}
+								}}
+								/>
+
+								<Button
+									title="Confirmar horário"
+									onPress={() => setShowTimePicker(false)}
+									color="#141e61"
+								/>
+							</View>
+						)}
+					</>
+				)}
+
+				{step === 3 && (
+					<>
+					<Text style={styles.label}>Informe a quantidade de passageiros</Text>
+					<View style={styles.counterContainer}>
+						<Button title="-" onPress={() => passengers > 1 && setPassengers(passengers - 1)} />
+						<Text style={styles.counterText}>{passengers}</Text>
+						<Button title="+" onPress={() => passengers < 4 && setPassengers(passengers + 1)} />
+					</View>
+					</>
+				)}
+
+				{step === 4 && (
+					<>
+						<Text style={styles.label}>Informe o valor da carona</Text>
+						<TextInput
+							style={styles.input}
+							placeholder="Preço da carona (ex: 20.50)"
+							value={price}
+							onChangeText={handleChange}
+							keyboardType="numeric"
+						/>
+					</>
+				)}
+
+				{step === 5 && (
+					<>
+						<Text style={styles.label}>Selecione o veículo:</Text>
+						<FlatList
+							data={cars}
+							keyExtractor={(item) => item.id.toString()}
+							renderItem={({ item }) => {
+								const isSelected = selectedCarId === item.id;
+								return (
+									<TouchableOpacity
+										style={[
+											styles.carItem,
+											isSelected && styles.carItemSelected
+										]}
+										onPress={() => setSelectedCarId(item.id)}
+									>
+										<View style={styles.radio}>
+											{isSelected && <View style={styles.radioSelected} />}
+										</View>
+										<View>
+											<Text style={styles.carTitle}>{`${item.brand} ${item.model}`}</Text>
+											<Text style={styles.carPlate}>{item.plate.toUpperCase()}</Text>
+										</View>
+									</TouchableOpacity>
+								);
+							}}
+						/>
+					</>
+				)}
+			</View>
+			
+
+			<View style={styles.bottom}>
+				<View style={styles.navRow}>
+					<Button title="Voltar" onPress={back} />
+						{step < 5 ? (
+					<Button title="Próximo" onPress={next} />
+						) : (
+					<Button title="Finalizar" onPress={finish} />
+					)}
+				</View>
+			</View>
+		</View>
+	);
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, marginTop: 50 },
-  back: { fontSize: 16, marginBottom: 10 },
-  title: { fontSize: 18, fontWeight: "bold", marginBottom: 12 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#888",
-    padding: 14,
-    borderRadius: 10,
-    marginBottom: 4,
-  },
-  suggestionsList: {
-    maxHeight: 180,
-    backgroundColor: "#fff",
-    borderColor: "#ccc",
-    borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  suggestionItem: {
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  mapContainer: {
-    flex: 1,
-    borderRadius: 12,
-    overflow: "hidden",
-    marginBottom: 20,
-  },
-  map: {
-    width: "100%",
-    height: "100%",
-  },
-  saveBtn: {
-    backgroundColor: "#141e61",
-    padding: 16,
-    borderRadius: 30,
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  saveText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
+	container: {
+		flex: 1,
+		padding: 20,
+	},
+	top: {
+		flex: 1,
+		justifyContent: "flex-end",
+		alignItems: "center",
+	},
+	middle: {
+		flex: 3,
+		justifyContent: "center",
+		alignItems: "center",
+	},
+	bottom: {
+		flex: 1,
+		justifyContent: "flex-end",
+	},
+	header: {
+		fontSize: 18,
+		fontWeight: "bold",
+		marginBottom: 20,
+	},
+	input: {
+		borderWidth: 1,
+		borderColor: "#888",
+		borderRadius: 8,
+		padding: 14,
+		marginVertical: 20,
+		width: "100%",
+	},
+	counterContainer: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		marginVertical: 20,
+	},
+	counterText: {
+		fontSize: 24,
+		marginHorizontal: 20,
+	},
+	navRow: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		marginTop: 30,
+	},
+	radioRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		marginVertical: 10,
+	},
+	radio: {
+		width: 20,
+		height: 20,
+		borderRadius: 10,
+		borderWidth: 2,
+		borderColor: "#888",
+		justifyContent: "center",
+		alignItems: "center",
+		marginRight: 10,
+	},
+	radioSelected: {
+		width: 10,
+		height: 10,
+		borderRadius: 5,
+		backgroundColor: "#141e61",
+	},
+	label: {
+		fontSize: 16,
+		fontWeight: "500",
+		marginBottom: 8,
+		alignItems:"center",
+	},
+	carItem: {
+		flexDirection: "row",
+		alignItems: "center",
+		backgroundColor: "#f2f2f2",
+		padding: 12,
+		borderRadius: 8,
+		marginBottom: 10,
+		borderWidth: 1,
+		borderColor: "#ccc",
+	},
+
+	carItemSelected: {
+		borderColor: "#141e61",
+		backgroundColor: "#e0e8ff",
+	},
+
+	carTitle: {
+		fontSize: 16,
+		fontWeight: "bold",
+	},
+
+	carPlate: {
+		fontSize: 14,
+		color: "#555",
+	},
+	weekDaysContainer: {
+		flexDirection: "row",
+		flexWrap: "wrap",
+		gap: 8,
+		marginTop: 10,
+		justifyContent: "center"
+	},
+	dayButton: {
+		paddingVertical: 8,
+		paddingHorizontal: 14,
+		borderRadius: 6,
+		backgroundColor: "#eee",
+		margin: 4
+	},
+	dayButtonSelected: {
+		backgroundColor: "#007BFF"
+	},
+	dayText: {
+		fontSize: 14,
+		color: "#000"
+	},
+	dayTextSelected: {
+		color: "#fff",
+		fontWeight: "bold"
+	},
+	selectedText: {
+		marginTop: 10,
+		fontSize: 14,
+		color: "#333"
+	},
+
 });
+

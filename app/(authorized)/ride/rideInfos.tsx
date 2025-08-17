@@ -1,5 +1,6 @@
 // app/rides/[id].tsx
 import { useAuthSession } from "@/providers/AuthProvider";
+import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React from "react";
@@ -63,7 +64,6 @@ export default function RideDetailScreen() {
       });
 
       const data = await response.json();
-
       if (!response.ok) {
           throw new Error(data.errors || "Erro ao reservar carona");
       }
@@ -75,8 +75,12 @@ export default function RideDetailScreen() {
       });
 
     } catch (error) {
+      if (error instanceof Error) {
+        Alert.alert("Erro", error.message);
+      } else {
         Alert.alert("Erro", "Não foi possível reservar a carona. Tente novamente mais tarde.");
-        return;
+      }
+      return;
     }
 
   };
@@ -91,6 +95,12 @@ export default function RideDetailScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="#000" />
+          <Text style={styles.backText}>Voltar</Text>
+        </TouchableOpacity>
+      </View>
       <View style={styles.card}>
         <Text style={styles.title}>🚗 Detalhes da Viagem</Text>
 
@@ -131,6 +141,22 @@ const styles = StyleSheet.create({
         "#f2f2f2", 
         justifyContent: "center", 
         alignItems: "center"
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 16,
+    },
+    backButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      alignSelf: "flex-start",
+    },
+    backText: {
+      marginLeft: 6,
+      fontSize: 16,
+      fontWeight: "500",
+      color: "#000",
     },
     center: { 
         flex: 1, 

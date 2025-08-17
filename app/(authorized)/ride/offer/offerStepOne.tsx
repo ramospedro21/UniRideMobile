@@ -22,14 +22,15 @@ type Coordinates = {
 };
 
 type Ride = {
-  origin: Coordinates;
-  destination: Coordinates | null;
+  departure: Coordinates;
+  arrival: Coordinates | null;
   driver_id: string | null;
   car_id: string | null;
   price: number | null;
   cost: number | null;
   passengers: number | null;
   departure_time: string | null;
+  address: string;
 };
 
 export default function OfferStepOne() {
@@ -38,14 +39,15 @@ export default function OfferStepOne() {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
   const [ride, setRide] = useState<Ride>({
-    origin: { latitude: 0, longitude: 0 },
-    destination: { latitude: UNIP_LAT, longitude: UNIP_LONG },
+    departure: { latitude: 0, longitude: 0 },
+    arrival: { latitude: UNIP_LAT, longitude: UNIP_LONG },
     driver_id: null,
     car_id: null,
     price: null,
     cost: null,
     passengers: null,
     departure_time: null,
+    address: "",
   });
 
   // Autocomplete
@@ -93,11 +95,12 @@ export default function OfferStepOne() {
 
     const updatedRide: Ride = {
       ...ride,
-      origin: coordinates,
+      departure: coordinates,
+      address: address
     };
 
     router.push({
-      pathname: "/(authorized)/ride/offer/offerStepThree",
+      pathname: "/(authorized)/ride/offer/offerStepTwo",
       params: {
         ride: JSON.stringify(updatedRide),
       },
