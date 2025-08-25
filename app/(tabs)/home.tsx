@@ -23,7 +23,7 @@ export default function HomeScreen() {
   };
 
   const handleTrips = () => {
-    console.log("Ver viagens futuras ou passadas");
+    router.push("/(authorized)/trips/tripsList");
   };
 
   return (
@@ -79,7 +79,7 @@ export default function HomeScreen() {
       </View>
 
       {/* Suas viagens */}
-      <TouchableOpacity style={styles.tripsButton}>
+      <TouchableOpacity style={styles.tripsButton} onPress={handleTrips}>
         <Text style={styles.tripsText}>Suas viagens</Text>
       </TouchableOpacity>
     </View>
