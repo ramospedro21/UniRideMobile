@@ -77,8 +77,6 @@ export default function UserRidesScreen() {
                 };
             });
 
-
-
             setRequestedRides(mappedRequested);
             setOfferedRides(mappedOffered);
         } catch (error) {
@@ -97,12 +95,27 @@ export default function UserRidesScreen() {
   }
 
   const renderRide = (ride: Ride) => (
-    <View style={styles.card}>
-      <Text style={styles.cardText}>🕒 Saída: {ride.departure_time}</Text>
-      <Text style={styles.cardText}>👥 Lugares: {ride.capacity}</Text>
-      <Text style={styles.cardText}>💰 Valor: R$ {ride.ride_fare}</Text>
-      <Text style={styles.status}>📌 Status: {ride.status}</Text>
-    </View>
+    <TouchableOpacity
+        onPress={() => {
+            if(activeTab === "solicitadas") {
+                router.push({
+                    pathname: "/(authorized)/trips/passenger-trip-detail",
+                    params: { rideId: ride.id }
+                })
+            } else {
+                router.push({
+                    pathname: `/(authorized)/trips/driverTripDetail`, 
+                    params: { rideId: ride.id }
+                });
+            }
+        }}>
+        <View style={styles.card}>
+            <Text style={styles.cardText}>🕒 Saída: {ride.departure_time}</Text>
+            <Text style={styles.cardText}>👥 Lugares: {ride.capacity}</Text>
+            <Text style={styles.cardText}>💰 Valor: R$ {ride.ride_fare}</Text>
+            <Text style={styles.status}>📌 Status: {ride.status}</Text>
+        </View>
+    </TouchableOpacity>
   );
 
   if (loading) {
@@ -117,13 +130,8 @@ export default function UserRidesScreen() {
   return (
     <View style={styles.container}>
       {/* Botão Voltar */}
-      <TouchableOpacity style={styles.backButton} onPress={() => router.push("/(tabs)/home")}>
+      <TouchableOpacity onPress={() => router.push("/(tabs)/home")}>
         <Text style={styles.backText}>← Voltar</Text>
-      </TouchableOpacity>
-
-      {/* Botão para motoristas aceitarem caronas pendentes */}
-      <TouchableOpacity style={styles.acceptButton}>
-        <Text style={styles.acceptText}>🚗 Ver Caronas Pendentes</Text>
       </TouchableOpacity>
 
       {/* Tabs estilo bootstrap */}
@@ -169,16 +177,21 @@ export default function UserRidesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f2f2f2", marginTop: 100 },
-  loader: { flex: 1, justifyContent: "center", alignItems: "center" },
+  container: { 
+    flex: 1, 
+    backgroundColor: "#f8f9fa", // mesma cor da foto
+    paddingTop: 60, // margem do topo para o botão Voltar
+  },
+  loader: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#f8f9fa" },
   backButton: {
     padding: 12,
     backgroundColor: "#007bff",
     borderRadius: 8,
-    margin: 16,
+    marginHorizontal: 16,
+    marginBottom: 16,
     alignSelf: "flex-start",
   },
-  backText: { color: "#fff", fontWeight: "bold", fontSize: 14 },
+  backText: { color: "#000", fontSize: 14 },
   tabs: {
     flexDirection: "row",
     justifyContent: "center",
@@ -202,7 +215,11 @@ const styles = StyleSheet.create({
   activeTabText: {
     color: "#007bff",
   },
-  list: { paddingHorizontal: 16, paddingBottom: 16 },
+  list: { 
+    paddingHorizontal: 16, 
+    paddingBottom: 16, 
+    backgroundColor: "#f8f9fa" // mantém mesma cor da tela
+  },
   card: {
     backgroundColor: "#fff",
     borderRadius: 12,
@@ -216,13 +233,5 @@ const styles = StyleSheet.create({
   },
   cardText: { fontSize: 14, marginBottom: 4, color: "#333" },
   status: { marginTop: 4, fontWeight: "600", color: "#007bff" },
-  acceptButton: {
-    backgroundColor: "#28a745",
-    padding: 14,
-    margin: 12,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  acceptText: { color: "#fff", fontWeight: "600", fontSize: 16 },
   emptyText: { textAlign: "center", color: "#666", marginTop: 20 },
 });
