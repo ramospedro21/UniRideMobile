@@ -130,7 +130,8 @@ export default function UserRidesScreen() {
   return (
     <View style={styles.container}>
       {/* Botão Voltar */}
-      <TouchableOpacity onPress={() => router.push("/(tabs)/home")}>
+
+      <TouchableOpacity style={styles.backButton} onPress={() => router.push("/(tabs)/home")}>
         <Text style={styles.backText}>← Voltar</Text>
       </TouchableOpacity>
 
@@ -191,7 +192,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     alignSelf: "flex-start",
   },
-  backText: { color: "#000", fontSize: 14 },
+  backText: { color: "#fff", fontWeight: "bold", fontSize: 14 },
   tabs: {
     flexDirection: "row",
     justifyContent: "center",

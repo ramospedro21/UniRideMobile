@@ -20,7 +20,7 @@ export default function PassengerTripDetail() {
   useEffect(() => {
     const fetchRide = async () => {
       try {
-
+console.log(rideId);
         const token = await SecureStore.getItemAsync("access_token");
         const url = `${apiUrl}/rides/${rideId}`;
 
@@ -34,7 +34,7 @@ export default function PassengerTripDetail() {
 
         const data = await response.json();
         setRide(data.data);
-        console.log(data.data);
+
       } catch (error) {
         console.error(error);
       } finally {
@@ -160,14 +160,23 @@ export default function PassengerTripDetail() {
             <Text style={styles.title}>Passageiros</Text>
             {ride.passengers?.length > 0 ? (
                 ride.passengers.map((p: any) => (
-                <TouchableOpacity
+                  <TouchableOpacity
                     key={p.id}
-                    onPress={() => p.status === "Pendente" && handlePassengerPress(p)}
-                >
+                    onPress={() => {
+                      if (p.status === "Pendente") {
+                        handlePassengerPress(p);
+                      } else {
+                        router.push({
+                          pathname: "/(authorized)/trips/passengerProfile",
+                          params: { id: String(p.id), rideId: String(ride.id) },
+                        });
+                      }
+                    }}
+                  >
                     <Text style={styles.textMarging}>
-                        👤 Nome: {p.name} | {p.status === "Pendente" ? "Pendente de aprovação ⚠️" : "Aprovado ✅"}
+                      👤 Nome: {p.name} | {p.status === "Pendente" ? "Pendente de aprovação ⚠️" : "Aprovado ✅"}
                     </Text>
-                </TouchableOpacity>
+                  </TouchableOpacity>
                 ))
             ) : (
             <Text>Nenhum passageiro ainda</Text>

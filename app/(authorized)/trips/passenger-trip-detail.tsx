@@ -27,7 +27,7 @@ export default function PassengerTripDetail() {
 
         const data = await response.json();
         setRide(data.data);
-        console.log(data.data);
+
       } catch (error) {
         console.error(error);
       } finally {

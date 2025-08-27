@@ -119,7 +119,7 @@ export default function OfferStepThree() {
 		};
 
 		const token = await SecureStore.getItemAsync("access_token");
-console.log(formattedRide);
+
 		const response = await fetch(`${apiUrl}/rides`, {
 			method: "POST",
 			headers: {
